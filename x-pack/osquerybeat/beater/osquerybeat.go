@@ -6,6 +6,7 @@ package beater
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -209,6 +210,7 @@ func (bt *osquerybeat) Run(b *beat.Beat) error {
 		if err != nil {
 			return err
 		}
+		rah.Configure(bt.config.Inputs)
 
 		for {
 			select {
@@ -221,6 +223,7 @@ func (bt *osquerybeat) Run(b *beat.Beat) error {
 					bt.log.Errorf("Failed to connect beat publisher client, err: %v", err)
 					return err
 				}
+				rah.Configure(inputConfigs)
 				err = runner.Update(ctx, inputConfigs)
 				if err != nil {
 					bt.log.Errorf("Failed to configure osquery runner, err: %v", err)
@@ -315,6 +318,9 @@ func (bt *osquerybeat) runOsquery(ctx context.Context, b *beat.Beat, osq *osqd.O
 				bt.log.Info("runOsquery context cancelled, exiting")
 				return ctx.Err()
 			case inputConfigs := <-inputCh:
+				// TODO: REMOVE!!
+				b, _ := json.Marshal(inputConfigs)
+				fmt.Println("OSQUERY INPUT CONFIGS:", string(b))
 				err = configPlugin.Set(inputConfigs)
 				if err != nil {
 					bt.log.Errorf("failed to set configuration from inputs: %v", err)

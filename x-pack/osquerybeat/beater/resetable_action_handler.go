@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/elastic/beats/v7/x-pack/osquerybeat/internal/config"
 	"github.com/elastic/elastic-agent-client/v7/pkg/client"
 	"github.com/elastic/elastic-agent-libs/logp"
 )
@@ -58,6 +59,9 @@ func resetableActionHandlerWithTimeout(timeout time.Duration) optionFunc {
 	return func(a *resetableActionHandler) {
 		a.timeout = timeout
 	}
+}
+
+func (a *resetableActionHandler) Configure(inputs []config.InputConfig) {
 }
 
 func (a *resetableActionHandler) Execute(ctx context.Context, req map[string]interface{}) (res map[string]interface{}, err error) {

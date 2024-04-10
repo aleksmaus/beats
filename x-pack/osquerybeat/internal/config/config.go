@@ -22,12 +22,14 @@ import (
 //   query: select * from usb_devices
 
 const (
-	DefaultNamespace = "default"
-	DefaultDataset   = "osquery_manager.result"
-	DefaultType      = "logs"
+	DefaultNamespace            = "default"
+	DefaultDataset              = "osquery_manager.result"
+	DefaultType                 = "logs"
+	DefaultActionResultsDataset = "osquery_manager.action.results"
 )
 
 var datastreamPrefix = fmt.Sprintf("%s-%s-", DefaultType, DefaultDataset)
+var datastreamActionResultsPrefix = fmt.Sprintf("%s-%s-", DefaultType, DefaultActionResultsDataset)
 
 type StreamConfig struct {
 	ID         string                 `config:"id"`
@@ -71,6 +73,13 @@ func Datastream(namespace string) string {
 		namespace = DefaultNamespace
 	}
 	return datastreamPrefix + namespace
+}
+
+func ActionResultsDatastream(namespace string) string {
+	if namespace == "" {
+		namespace = DefaultNamespace
+	}
+	return datastreamActionResultsPrefix + namespace
 }
 
 // GetOsqueryOptions Returns options from the first input if available

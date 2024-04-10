@@ -5,6 +5,8 @@
 package pub
 
 import (
+	"encoding/json"
+	"fmt"
 	"sync"
 	"time"
 
@@ -44,6 +46,9 @@ func (p *Publisher) Configure(inputs []config.InputConfig) error {
 
 	p.mx.Lock()
 	defer p.mx.Unlock()
+
+	b, _ := json.Marshal(inputs)
+	fmt.Println("PUBLISHER CONFIGURE INPUTS: ", string(b))
 
 	processors, err := p.processorsForInputsConfig(inputs)
 	if err != nil {
