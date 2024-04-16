@@ -79,11 +79,67 @@ func genVerifyCmd(_ instance.Settings) *cobra.Command {
 }
 
 func osquerybeatCfg(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
+	if len(rawIn.GetStreams()) == 0 {
+		return osquerybeatCfgNoStreams(rawIn, agentInfo)
+	}
+	return nil, nil
+}
+
+// This is needed for compatibility with the legace implementation where kibana set empty streams array [] into the policy
+func osquerybeatCfgNoStreams(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
+	// Convert to streams, osquerybeat doesn't use streams
+	streams := make([]*proto.Stream, 1)
+
+	// Enforce the datastream dataset and type because the libbeat call to CreateInputsFromStreams
+	// provides it's own defaults that are breaking the osquery with logstash
+	// The target datastream for the publisher is expected to be logs-osquery_manager.result-<namespace>
+	// while the libebeat management.CreateInputsFromStreams defaults to osquery-generic-default
+	var datastream *proto.DataStream
+	if rawIn.GetDataStream() != nil {
+		// Copy by value and modify dataset and type
+		ds := *rawIn.GetDataStream()
+		ds.Dataset = config.DefaultDataset
+		ds.Type = config.DefaultType
+		datastream = &ds
+	}
+
+	streams[0] = &proto.Stream{
+		Source:     rawIn.GetSource(),
+		Id:         rawIn.GetId(),
+		DataStream: datastream,
+	}
+
+	rawIn.Streams = streams
+
+	modules, err := management.CreateInputsFromStreams(rawIn, "osquery", agentInfo)
+	if err != nil {
+		return nil, fmt.Errorf("error creating input list from raw expected config: %w", err)
+	}
+	for iter := range modules {
+		modules[iter]["type"] = "log"
+	}
+
+	// format for the reloadable list needed bythe cm.Reload() method
+	configList, err := management.CreateReloadConfigFromInputs(modules)
+	if err != nil {
+		return nil, fmt.Errorf("error creating config for reloader: %w", err)
+	}
+	return configList, nil
+}
+
+func xxxosquerybeatCfg(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
 
 	/////////////////////////////
 	// BEGIN: REMOVE!!!
 	/////////////////////////////
-	b, err := json.Marshal(rawIn.GetStreams())
+
+	b, err := json.Marshal(rawIn)
+	if err != nil {
+		fmt.Println("OSQUERYBEATCFG FAILED MARSHALLING rawIn:", err)
+	}
+	fmt.Println("OSQUERYBEATCFG RAW IN: ", string(b))
+
+	b, err = json.Marshal(rawIn.GetStreams())
 	if err != nil {
 		fmt.Println("OSQUERYBEATCFG FAILED MARSHALLING STREAMS:", err)
 	}
