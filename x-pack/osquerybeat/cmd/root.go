@@ -79,13 +79,29 @@ func genVerifyCmd(_ instance.Settings) *cobra.Command {
 }
 
 func osquerybeatCfg(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
+	// For the older stack there were no streams, creating one
 	if len(rawIn.GetStreams()) == 0 {
 		return osquerybeatCfgNoStreams(rawIn, agentInfo)
 	}
-	return nil, nil
+	return osquerybeatCfgFromStreams(rawIn, agentInfo)
 }
 
-// This is needed for compatibility with the legace implementation where kibana set empty streams array [] into the policy
+func osquerybeatCfgFromStreams(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
+	streamList, err := management.CreateInputsFromStreams(rawIn, "logs", agentInfo)
+	if err != nil {
+		return nil, fmt.Errorf("error creating input list from raw expected config: %w", err)
+	}
+
+	// format for the reloadable list needed bythe cm.Reload() method
+	configList, err := management.CreateReloadConfigFromInputs(streamList)
+	if err != nil {
+		return nil, fmt.Errorf("error creating config for reloader: %w", err)
+	}
+
+	return configList, nil
+}
+
+// This is needed for compatibility with the legacy implementation where kibana set empty streams array [] into the policy
 func osquerybeatCfgNoStreams(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
 	// Convert to streams, osquerybeat doesn't use streams
 	streams := make([]*proto.Stream, 1)

@@ -210,7 +210,6 @@ func (bt *osquerybeat) Run(b *beat.Beat) error {
 		if err != nil {
 			return err
 		}
-		rah.Configure(bt.config.Inputs)
 
 		for {
 			select {
@@ -223,7 +222,6 @@ func (bt *osquerybeat) Run(b *beat.Beat) error {
 					bt.log.Errorf("Failed to connect beat publisher client, err: %v", err)
 					return err
 				}
-				rah.Configure(inputConfigs)
 				err = runner.Update(ctx, inputConfigs)
 				if err != nil {
 					bt.log.Errorf("Failed to configure osquery runner, err: %v", err)

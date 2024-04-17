@@ -7,6 +7,7 @@ import (
 
 	"github.com/elastic/elastic-agent-client/v7/pkg/client"
 	"github.com/elastic/elastic-agent-client/v7/pkg/proto"
+	"github.com/elastic/elastic-agent-libs/mapstr"
 )
 
 const rawInLegacyJSON = `{
@@ -167,16 +168,28 @@ const rawInJSON = `{
 }`
 
 func TestOsquerybeatCfg(t *testing.T) {
-	var rawInLegacy proto.UnitExpectedConfig
-	err := json.Unmarshal([]byte(rawInLegacyJSON), &rawInLegacy)
+	var rawIn proto.UnitExpectedConfig
+	err := json.Unmarshal([]byte(rawInJSON), &rawIn)
 	if err != nil {
 		t.Fatal(err)
 	}
-	cfg, err := osquerybeatCfg(&rawInLegacy, &client.AgentInfo{ID: "abc7d0a8-ce04-4663-95da-ff6d537c268f", Version: "8.13.1"})
+	cfg, err := osquerybeatCfg(&rawIn, &client.AgentInfo{ID: "abc7d0a8-ce04-4663-95da-ff6d537c268f", Version: "8.13.1"})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	_ = cfg
-	fmt.Println("here")
+	for _, c := range cfg {
+		m := mapstr.M{}
+		err = c.Config.Unpack(&m)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		b, err := json.Marshal(m)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		fmt.Println(string(b))
+	}
 }
