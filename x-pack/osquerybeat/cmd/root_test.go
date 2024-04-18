@@ -62,6 +62,63 @@ const rawInLegacyJSON = `{
     ]
 }`
 
+const rawInLegacyWithOsqueryConfig = `{
+    "source": {
+        "data_stream": {
+            "namespace": "default"
+        },
+        "id": "74c7d0a8-ce04-4663-95da-ff6d537c268c",
+        "meta": {
+            "package": {
+                "name": "osquery_manager",
+                "version": "1.12.1"
+            }
+        },
+        "name": "osquery_manager-1",
+        "osquery": {
+            "options": {
+                "host_identifier": "hostname"
+            }
+        },
+        "package_policy_id": "74c7d0a8-ce04-4663-95da-ff6d537c268c",
+        "policy": {
+            "revision": 3
+        },
+        "revision": 2,
+        "streams": [
+        ],
+        "type": "osquery"
+    },
+    "id": "74c7d0a8-ce04-4663-95da-ff6d537c268c",
+    "type": "osquery",
+    "name": "osquery_manager-1",
+    "revision": 2,
+    "meta": {
+        "source": {
+            "package": {
+                "name": "osquery_manager",
+                "version": "1.12.1"
+            }
+        },
+        "package": {
+            "source": {
+                "name": "osquery_manager",
+                "version": "1.12.1"
+            },
+            "name": "osquery_manager",
+            "version": "1.12.1"
+        }
+    },
+    "data_stream": {
+        "source": {
+            "namespace": "default"
+        },
+        "namespace": "default"
+    },
+    "streams": [
+    ]
+}`
+
 const rawInJSON = `{
     "source": {
         "data_stream": {
@@ -167,9 +224,120 @@ const rawInJSON = `{
     ]
 }`
 
+const rawInJSONWithOsqueryConfig = `{
+    "source": {
+        "data_stream": {
+            "namespace": "default"
+        },
+        "id": "74c7d0a8-ce04-4663-95da-ff6d537c268c",
+        "meta": {
+            "package": {
+                "name": "osquery_manager",
+                "version": "1.12.1"
+            }
+        },
+        "name": "osquery_manager-1",
+        "osquery": {
+            "options": {
+                "host_identifier": "hostname"
+            }
+        },
+        "package_policy_id": "74c7d0a8-ce04-4663-95da-ff6d537c268c",
+        "policy": {
+            "revision": 3
+        },
+        "revision": 2,
+        "streams": [
+            {
+                "data_stream": {
+                    "dataset": "osquery_manager.action.results",
+                    "type": "logs"
+                },
+                "id": "osquery-osquery_manager.action.results-74c7d0a8-ce04-4663-95da-ff6d537c268c",
+                "query": null
+            },
+            {
+                "data_stream": {
+                    "dataset": "osquery_manager.result",
+                    "type": "logs"
+                },
+                "id": null,
+                "query": null
+            }
+        ],
+        "type": "osquery"
+    },
+    "id": "74c7d0a8-ce04-4663-95da-ff6d537c268c",
+    "type": "osquery",
+    "name": "osquery_manager-1",
+    "revision": 2,
+    "meta": {
+        "source": {
+            "package": {
+                "name": "osquery_manager",
+                "version": "1.12.1"
+            }
+        },
+        "package": {
+            "source": {
+                "name": "osquery_manager",
+                "version": "1.12.1"
+            },
+            "name": "osquery_manager",
+            "version": "1.12.1"
+        }
+    },
+    "data_stream": {
+        "source": {
+            "namespace": "default"
+        },
+        "namespace": "default"
+    },
+    "streams": [
+        {
+            "source": {
+                "data_stream": {
+                    "dataset": "osquery_manager.action.results",
+                    "type": "logs"
+                },
+                "id": "osquery-osquery_manager.action.results-74c7d0a8-ce04-4663-95da-ff6d537c268c",
+                "query": null
+            },
+            "id": "osquery-osquery_manager.action.results-74c7d0a8-ce04-4663-95da-ff6d537c268c",
+            "data_stream": {
+                "source": {
+                    "dataset": "osquery_manager.action.results",
+                    "type": "logs"
+                },
+                "dataset": "osquery_manager.action.results",
+                "type": "logs"
+            }
+        },
+        {
+            "source": {
+                "data_stream": {
+                    "dataset": "osquery_manager.result",
+                    "type": "logs"
+                },
+                "id": null,
+                "query": null
+            },
+            "data_stream": {
+                "source": {
+                    "dataset": "osquery_manager.result",
+                    "type": "logs"
+                },
+                "dataset": "osquery_manager.result",
+                "type": "logs"
+            }
+        }
+    ]
+}
+`
+
 func TestOsquerybeatCfg(t *testing.T) {
 	var rawIn proto.UnitExpectedConfig
-	err := json.Unmarshal([]byte(rawInJSON), &rawIn)
+	err := json.Unmarshal([]byte(rawInJSONWithOsqueryConfig), &rawIn)
 	if err != nil {
 		t.Fatal(err)
 	}

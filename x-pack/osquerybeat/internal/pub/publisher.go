@@ -28,8 +28,13 @@ type Publisher struct {
 	b   *beat.Beat
 	log *logp.Logger
 
-	mx     sync.Mutex
+	mx sync.Mutex
+
+	// client for osquery_manager.result
 	client beat.Client
+
+	// client for osquery_manager.action.results
+	actionResultClient beat.Client
 }
 
 func New(b *beat.Beat, log *logp.Logger) *Publisher {
@@ -50,21 +55,43 @@ func (p *Publisher) Configure(inputs []config.InputConfig) error {
 	b, _ := json.Marshal(inputs)
 	fmt.Println("PUBLISHER CONFIGURE INPUTS: ", string(b))
 
-	processors, err := p.processorsForInputsConfig(inputs)
-	if err != nil {
-		return err
+	// Setup configuration pointers to the clients and corresponding default datasets
+	setupConfig := []struct {
+	}{}
+
+	for i, input := range inputs {
+		processors, err := p.processorsForInputConfig(input, config.DefaultDataset)
+		if err != nil {
+			return err
+		}
+
+		p.log.Debugf("Connect publisher with processors: %d", len(processors.All()))
+		// Connect publisher
+		client, err := p.b.Publisher.ConnectWith(beat.ClientConfig{
+			Processing: beat.ProcessingConfig{
+				Processor: processors,
+			},
+		})
+		if err != nil {
+			return err
+		}
 	}
 
-	p.log.Debugf("Connect publisher with processors: %d", len(processors.All()))
-	// Connect publisher
-	client, err := p.b.Publisher.ConnectWith(beat.ClientConfig{
-		Processing: beat.ProcessingConfig{
-			Processor: processors,
-		},
-	})
-	if err != nil {
-		return err
-	}
+	// processors, err := p.processorForInputsConfig(inputs)
+	// if err != nil {
+	// 	return err
+	// }
+
+	// p.log.Debugf("Connect publisher with processors: %d", len(processors.All()))
+	// // Connect publisher
+	// client, err := p.b.Publisher.ConnectWith(beat.ClientConfig{
+	// 	Processing: beat.ProcessingConfig{
+	// 		Processor: processors,
+	// 	},
+	// })
+	// if err != nil {
+	// 	return err
+	// }
 
 	// Swap client
 	oldclient := p.client
@@ -96,40 +123,37 @@ func (p *Publisher) Close() {
 	}
 }
 
-func (p *Publisher) processorsForInputsConfig(inputs []config.InputConfig) (procs *processors.Processors, err error) {
+func (p *Publisher) processorsForInputConfig(inCfg config.InputConfig, defaultDataset string) (procs *processors.Processors, err error) {
 	procs = processors.NewList(nil)
 
 	// Use only first input processor
 	// Every input will have a processor that adds the elastic_agent info, we need only one
 	// Not expecting other processors at the moment and this needs to work for 7.13
-	for _, input := range inputs {
-		if len(input.Processors) > 0 {
-			// Attach the data_stream processor. This will append the data_stream attributes to the events.
-			// This is needed for the proper logstash auto-discovery of the destination datastream for the results.
-			ds := add_data_stream.DataStream{
-				Namespace: input.Datastream.Namespace,
-				Dataset:   input.Datastream.Dataset,
-				Type:      input.Datastream.Type,
-			}
-			if ds.Namespace == "" {
-				ds.Namespace = config.DefaultNamespace
-			}
-			if ds.Dataset == "" {
-				ds.Dataset = config.DefaultDataset
-			}
-			if ds.Type == "" {
-				ds.Type = config.DefaultType
-			}
-
-			procs.AddProcessor(add_data_stream.New(ds))
-
-			userProcs, err := processors.New(input.Processors)
-			if err != nil {
-				return nil, err
-			}
-			procs.AddProcessors(*userProcs)
-			break
+	if len(inCfg.Processors) > 0 {
+		// Attach the data_stream processor. This will append the data_stream attributes to the events.
+		// This is needed for the proper logstash auto-discovery of the destination datastream for the results.
+		ds := add_data_stream.DataStream{
+			Namespace: inCfg.Datastream.Namespace,
+			Dataset:   inCfg.Datastream.Dataset,
+			Type:      inCfg.Datastream.Type,
 		}
+		if ds.Namespace == "" {
+			ds.Namespace = config.DefaultNamespace
+		}
+		if ds.Dataset == "" {
+			ds.Dataset = defaultDataset
+		}
+		if ds.Type == "" {
+			ds.Type = config.DefaultType
+		}
+
+		procs.AddProcessor(add_data_stream.New(ds))
+
+		userProcs, err := processors.New(inCfg.Processors)
+		if err != nil {
+			return nil, err
+		}
+		procs.AddProcessors(*userProcs)
 	}
 	return procs, nil
 }

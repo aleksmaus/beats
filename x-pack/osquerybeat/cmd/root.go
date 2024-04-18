@@ -20,6 +20,7 @@ import (
 	"github.com/elastic/elastic-agent-client/v7/pkg/proto"
 	"github.com/elastic/elastic-agent-libs/logp"
 	"github.com/elastic/elastic-agent-libs/mapstr"
+	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/spf13/cobra"
 
@@ -87,9 +88,74 @@ func osquerybeatCfg(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo
 }
 
 func osquerybeatCfgFromStreams(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
+
+	b, _ := json.Marshal(rawIn)
+	fmt.Println("OSQUERY RAWIN:", string(b))
+
+	streams := make([]*proto.Stream, 0, len(rawIn.Streams))
+
+	// Attach osquery configuration to the osquery_manager.result stream and set it as a first stream
+	for _, stream := range rawIn.Streams {
+		if stream.DataStream != nil && stream.DataStream.Dataset == config.DefaultDataset {
+			if stream.Source == nil {
+				// If for any reason the stream source is missing completely, use datastream source as before
+				stream.Source = rawIn.Source
+			} else {
+				// Set osquery configuration value
+				fieldsSrc := rawIn.Source.Fields
+				fieldsDst := stream.Source.Fields
+				var osqVal *structpb.Value
+				if fieldsSrc != nil {
+					osqVal = fieldsSrc["osquery"]
+				}
+				if osqVal != nil {
+					fieldsDst["osquery"] = osqVal
+				}
+				// Setting id to the source because it is being picked up from there in shared management.CreateInputsFromStreams
+				vId, ok := fieldsDst["id"]
+				shouldSet := false
+				if !ok || vId == nil {
+					shouldSet = true
+				} else {
+					if _, ok := vId.GetKind().(*structpb.Value_NullValue); ok {
+						shouldSet = true
+					}
+				}
+				if shouldSet {
+					fieldsDst["id"] = structpb.NewStringValue(rawIn.Id)
+				}
+			}
+			streams = append([]*proto.Stream{stream}, streams...)
+			continue
+		}
+		streams = append(streams, stream)
+	}
+	rawIn.Streams = streams
+
 	streamList, err := management.CreateInputsFromStreams(rawIn, "logs", agentInfo)
 	if err != nil {
 		return nil, fmt.Errorf("error creating input list from raw expected config: %w", err)
+	}
+
+	var ns string
+	if rawIn.DataStream != nil {
+		ns = rawIn.DataStream.Namespace
+		if ns == "" {
+			ns = config.DefaultNamespace
+		}
+	}
+
+	for iter := range streamList {
+		if _, ok := streamList[iter]["type"]; !ok {
+			streamList[iter]["type"] = rawIn.Type
+		}
+		if v, ok := streamList[iter]["data_stream"]; ok {
+			if m, ok := v.(map[string]interface{}); ok {
+				if _, ok := m["namespace"]; !ok {
+					m["namespace"] = ns
+				}
+			}
+		}
 	}
 
 	// format for the reloadable list needed bythe cm.Reload() method
