@@ -61,14 +61,28 @@ func endpointbeatCfg(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInf
 	return endpointbeatCfgNoStreams(rawIn, agentInfo)
 }
 
-// This is needed for compatibility with the legacy implementation where kibana set empty streams array [] into the policy
+// Need to convert raw configuration into config with meta acceptable downstream
 func endpointbeatCfgNoStreams(rawIn *proto.UnitExpectedConfig, agentInfo *client.AgentInfo) ([]*reload.ConfigWithMeta, error) {
+	// Convert to streams, endpoint doesn't use streams
+	streams := make([]*proto.Stream, 1)
+
+	var datastream *proto.DataStream
+	if rawIn.GetDataStream() != nil {
+		ds := *rawIn.GetDataStream()
+		datastream = &ds
+	}
+
+	streams[0] = &proto.Stream{
+		Source:     rawIn.GetSource(),
+		Id:         rawIn.GetId(),
+		DataStream: datastream,
+	}
+
+	rawIn.Streams = streams
+
 	modules, err := management.CreateInputsFromStreams(rawIn, "endpoint", agentInfo)
 	if err != nil {
 		return nil, fmt.Errorf("error creating input list from raw expected config: %w", err)
-	}
-	for iter := range modules {
-		modules[iter]["type"] = "log"
 	}
 
 	// format for the reloadable list needed by the cm.Reload() method

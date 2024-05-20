@@ -19,7 +19,9 @@ type reloader struct {
 }
 
 func (r *reloader) debugLogConfig(cfg *reload.ConfigWithMeta) {
-	if !r.log.IsDebug() || cfg == nil || cfg.Config == nil {
+	// Log config always for development
+	if cfg == nil || cfg.Config == nil {
+		//if !r.log.IsDebug() || cfg == nil || cfg.Config == nil {
 		return
 	}
 
@@ -29,7 +31,8 @@ func (r *reloader) debugLogConfig(cfg *reload.ConfigWithMeta) {
 		r.log.Debugf("Failed to unpack the config for debug logging: %v", err)
 	} else {
 		b, _ := json.Marshal(m)
-		r.log.Debugf("Reloader config map: %v", string(b))
+		r.log.Infof("Reloader config map: %v", string(b))
+		//r.log.Debugf("Reloader config map: %v", string(b))
 	}
 }
 

@@ -120,7 +120,7 @@ func (bt *endpointbeat) Run(b *beat.Beat) error {
 					bt.log.Errorf("Failed to connect beat publisher client, err: %v", err)
 					return err
 				}
-				// TODO: propage the configuration change to Endpoint library
+				handleEndpointConfiguration(inputConfigs)
 			}
 		}
 	})
