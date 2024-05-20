@@ -22,6 +22,7 @@ import (
 	"github.com/elastic/beats/v7/dev-tools/mage/target/build"
 	metricbeat "github.com/elastic/beats/v7/metricbeat/scripts/mage"
 	packetbeat "github.com/elastic/beats/v7/packetbeat/scripts/mage"
+	endpointbeat "github.com/elastic/beats/v7/x-pack/endpointbeat/scripts/mage"
 	osquerybeat "github.com/elastic/beats/v7/x-pack/osquerybeat/scripts/mage"
 
 	//mage:import
@@ -36,6 +37,7 @@ import (
 var beats = []string{
 	"auditbeat",
 	"filebeat",
+	"endpointbeat",
 	"heartbeat",
 	"metricbeat",
 	"osquerybeat",
@@ -135,6 +137,9 @@ func Package() error {
 	// Add osquery distro binaries, required for the osquerybeat subcommand.
 	osquerybeat.CustomizePackaging()
 
+	// TODO: Ensure this customization picks up endpont library
+	endpointbeat.CustomizePackaging()
+
 	// Add metricbeat lightweight modules.
 	if err := metricbeat.CustomizeLightModulesPackaging(); err != nil {
 		return err
@@ -207,7 +212,7 @@ func GoIntegTest(ctx context.Context) error {
 	mg.Deps(BuildSystemTestBinary)
 	args := devtools.DefaultGoTestIntegrationFromHostArgs()
 	args.Tags = append(args.Tags, "agentbeat")
-	args.Packages = append(args.Packages, "../auditbeat/...", "../filebeat/...", "../heartbeat/...", "../metricbeat/...", "../osquerybeat/...", "../packetbeat/...")
+	args.Packages = append(args.Packages, "../auditbeat/...", "../endpointbeat/...", "../filebeat/...", "../heartbeat/...", "../metricbeat/...", "../osquerybeat/...", "../packetbeat/...")
 	return devtools.GoIntegTestFromHost(ctx, args)
 }
 

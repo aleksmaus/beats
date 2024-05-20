@@ -14,6 +14,7 @@ import (
 	"github.com/spf13/cobra"
 
 	auditbeat "github.com/elastic/beats/v7/x-pack/auditbeat/cmd"
+	endpointbeat "github.com/elastic/beats/v7/x-pack/endpointbeat/cmd"
 	filebeat "github.com/elastic/beats/v7/x-pack/filebeat/cmd"
 	heartbeat "github.com/elastic/beats/v7/x-pack/heartbeat/cmd"
 	metricbeat "github.com/elastic/beats/v7/x-pack/metricbeat/cmd"
@@ -32,7 +33,7 @@ func AgentBeat() *cobra.Command {
 	rootCmd := &cobra.Command{
 		Use:   "agentbeat",
 		Short: "Combined beat ran only by the Elastic Agent",
-		Long: `Combines auditbeat, filebeat, heartbeat, metricbeat, osquerybeat, and packetbeat
+		Long: `Combines auditbeat, filebeat, endpointbeat, heartbeat, metricbeat, osquerybeat, and packetbeat
 into a single agentbeat binary.`,
 		Example: "agentbeat filebeat run",
 	}
@@ -40,6 +41,7 @@ into a single agentbeat binary.`,
 	rootCmd.AddCommand(
 		prepareCommand(auditbeat.RootCmd),
 		prepareCommand(filebeat.Filebeat()),
+		prepareCommand(endpointbeat.RootCmd),
 		prepareCommand(heartbeat.RootCmd),
 		prepareCommand(metricbeat.RootCmd),
 		prepareCommand(osquerybeat.RootCmd),

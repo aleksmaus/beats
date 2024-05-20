@@ -1,0 +1,11 @@
+/.idea
+/build
+
+.DS_Store
+/endpointbeat
+/endpointbeat.test
+*.pyc
+
+
+# VSCode
+.vscode/

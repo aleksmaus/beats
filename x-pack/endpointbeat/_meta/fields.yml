@@ -1,0 +1,4 @@
+- key: endpointbeat
+  title: Endpointbeat
+  description:
+  fields:
